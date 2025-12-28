@@ -61,10 +61,21 @@
         const apiKeyIA = "AIzaSyC6-bG7HPhBnjmctpJPPYI29OSiM_S4JFg"; 
         
         const callIA = async (payload) => {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKeyIA}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-            });
-            return await res.json();
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKeyIA}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+                });
+                
+                if (!res.ok) {
+                    const errorData = await res.json();
+                    throw new Error(errorData.error?.message || `Erreur HTTP ${res.status}`);
+                }
+                
+                return await res.json();
+            } catch (e) {
+                // On relance l'erreur pour qu'elle soit capturée par le log de sync
+                throw e;
+            }
         };
 
         const Icon = ({ name, size = 20, className = "" }) => {
@@ -84,6 +95,9 @@
             const [adminTab, setAdminTab] = useState('sync'); 
             const [searchTab, setSearchTab] = useState('tarifs'); 
             
+            // Flag de sécurité pour le chargement des données
+            const [isDataLoaded, setIsDataLoaded] = useState(false);
+
             const [tarifs, setTarifs] = useState([]);
             const [fichesTechniques, setFichesTechniques] = useState([]);
             const [syncInfo, setSyncInfo] = useState({ lastSync: null, recentFiles: [] });
@@ -102,7 +116,7 @@
             const [syncLog, setSyncLog] = useState('');
             const fileInputRef = useRef(null); 
 
-            // --- CHARGEMENT PERSISTANCE ---
+            // --- CHARGEMENT PERSISTANCE (PRIORITAIRE) ---
             useEffect(() => {
                 try {
                     const savedTarifs = localStorage.getItem('cmgp_dbx_tarifs');
@@ -116,15 +130,31 @@
                     if (savedSync) setSyncInfo(JSON.parse(savedSync));
                 } catch(e) {
                     console.error("Erreur chargement localStorage", e);
+                } finally {
+                    // C'est la clé : on signale que le chargement est FINI
+                    setIsDataLoaded(true);
                 }
             }, []);
 
-            useEffect(() => { localStorage.setItem('cmgp_dbx_tarifs', JSON.stringify(tarifs)); }, [tarifs]);
-            useEffect(() => { localStorage.setItem('cmgp_dbx_ft', JSON.stringify(fichesTechniques)); }, [fichesTechniques]);
-            useEffect(() => { localStorage.setItem('cmgp_dbx_config', JSON.stringify(dbxConfig)); }, [dbxConfig]);
-            useEffect(() => { localStorage.setItem('cmgp_dbx_sync_info', JSON.stringify(syncInfo)); }, [syncInfo]);
+            // --- SAUVEGARDE AUTO (PROTÉGÉE) ---
+            // Ne sauvegarde QUE si les données ont été chargées au moins une fois
+            useEffect(() => { 
+                if (isDataLoaded) localStorage.setItem('cmgp_dbx_tarifs', JSON.stringify(tarifs)); 
+            }, [tarifs, isDataLoaded]);
 
-            // --- FONCTIONS SAUVEGARDE / RESTAURATION ---
+            useEffect(() => { 
+                if (isDataLoaded) localStorage.setItem('cmgp_dbx_ft', JSON.stringify(fichesTechniques)); 
+            }, [fichesTechniques, isDataLoaded]);
+
+            useEffect(() => { 
+                if (isDataLoaded) localStorage.setItem('cmgp_dbx_config', JSON.stringify(dbxConfig)); 
+            }, [dbxConfig, isDataLoaded]);
+
+            useEffect(() => { 
+                if (isDataLoaded) localStorage.setItem('cmgp_dbx_sync_info', JSON.stringify(syncInfo)); 
+            }, [syncInfo, isDataLoaded]);
+
+            // --- FONCTIONS SAUVEGARDE / RESTAURATION MANUELLE ---
             const handleExportConfig = () => {
                 const data = { tarifs, fichesTechniques, dbxConfig, syncInfo, exportDate: new Date().toISOString() };
                 const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
@@ -141,10 +171,12 @@
                 reader.onload = (e) => {
                     try {
                         const data = JSON.parse(e.target.result);
+                        // On met à jour les données et on force le flag isLoaded pour permettre la sauvegarde immédiate
                         if (data.tarifs) setTarifs(data.tarifs);
                         if (data.fichesTechniques) setFichesTechniques(data.fichesTechniques);
                         if (data.dbxConfig) setDbxConfig(data.dbxConfig);
                         if (data.syncInfo) setSyncInfo(data.syncInfo);
+                        setIsDataLoaded(true); 
                         alert("Configuration restaurée !");
                     } catch (error) { alert("Fichier invalide."); }
                 };
@@ -153,7 +185,6 @@
 
             // --- NETTOYAGE JSON ROBUSTE ---
             const extractJSON = (text) => {
-                // Cherche le premier { et le dernier } pour isoler le JSON du texte de l'IA
                 const firstBrace = text.indexOf('{');
                 const lastBrace = text.lastIndexOf('}');
                 if (firstBrace !== -1 && lastBrace !== -1) {
@@ -169,7 +200,6 @@
                     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
                     let allProducts = [];
                     
-                    // On analyse les 2 premières pages
                     for (let i = 1; i <= Math.min(pdf.numPages, 2); i++) {
                         const page = await pdf.getPage(i);
                         const viewport = page.getViewport({ scale: 1.5 });
@@ -179,7 +209,7 @@
                         canvas.width = viewport.width;
                         await page.render({ canvasContext: ctx, viewport }).promise;
                         
-                        // Prompt très strict pour l'IA
+                        // Appel IA
                         const result = await callIA({
                             contents: [{ parts: [{ text: "Extrais la liste des produits sous forme d'un objet JSON strict. Structure: { \"products\": [ { \"name\": \"Nom complet du produit\", \"price\": \"Prix numérique (ex: 120.50)\", \"packaging\": \"Unité (ex: 25 KG)\" } ] }. Ne mets RIEN d'autre que le JSON." }, { inlineData: { mimeType: "image/png", data: canvas.toDataURL('image/png').split(',')[1] } } ] }],
                             generationConfig: { responseMimeType: "application/json" }
@@ -188,11 +218,9 @@
                         if (result.candidates && result.candidates[0].content) {
                             const rawText = result.candidates[0].content.parts[0].text;
                             const cleanJson = extractJSON(rawText);
-                            
                             try {
                                 const data = JSON.parse(cleanJson);
                                 if (data.products && Array.isArray(data.products)) {
-                                    // Normalisation des prix
                                     const cleanProducts = data.products.map(p => ({
                                         ...p,
                                         price: p.price ? String(p.price).replace(',', '.').replace(/[^0-9.]/g, '') : '0'
@@ -206,8 +234,7 @@
                     }
                     return allProducts;
                 } catch (e) {
-                    console.error("Erreur lecture PDF", e);
-                    return []; 
+                    throw e; 
                 }
             };
 
@@ -239,7 +266,6 @@
                             validEntryIds.push(entry.id);
                             const existing = localTarifs.find(t => t.id === entry.id);
 
-                            // Force l'update si demandé ou si pas de produits
                             const needsUpdate = forceRescan || !existing || existing.server_modified !== entry.server_modified || (!existing.products || existing.products.length === 0);
 
                             if (needsUpdate) {
@@ -250,9 +276,9 @@
                                     const products = await analyzeTarifPDF(blob);
                                     
                                     if (products.length === 0) {
-                                        setSyncLog(`⚠️ ${entry.name} : 0 produits. (Fichier ajouté pour recherche par nom)`);
+                                        setSyncLog(`⚠️ ${entry.name} : 0 produits. (Recherche par nom fichier uniquement)`);
                                     } else {
-                                        setSyncLog(`✅ ${entry.name} : ${products.length} produits trouvés.`);
+                                        setSyncLog(`✅ ${entry.name} : ${products.length} produits extraits.`);
                                     }
 
                                     const newDoc = {
@@ -264,12 +290,12 @@
                                         type: 'tarif'
                                     };
                                     
-                                    // Mise à jour immédiate
+                                    // Mise à jour state pour affichage temps réel
                                     setTarifs(prev => {
                                         const filtered = prev.filter(p => p.id !== entry.id);
                                         return [...filtered, newDoc];
                                     });
-                                    // Mise à jour locale pour la suite de la boucle
+                                    // Mise à jour var locale pour la suite
                                     localTarifs = [...localTarifs.filter(p => p.id !== entry.id), newDoc];
 
                                     newRecentFiles.push({ name: entry.name, type: 'tarif', date: new Date().toLocaleTimeString() });
@@ -281,7 +307,6 @@
                             }
                         }
                         
-                        // Nettoyage orphelins (si non forcé, car forcé vide déjà tout)
                         if(!forceRescan) {
                              const cleaned = localTarifs.filter(t => validEntryIds.includes(t.id));
                              setTarifs(cleaned);
@@ -379,9 +404,8 @@
                         });
                     }
 
-                    // 2. Recherche de secours sur le nom du fichier (Si extraction échouée ou produit non trouvé)
+                    // 2. Recherche de secours sur le nom du fichier
                     if (t.name.toLowerCase().includes(searchLower)) {
-                        // On évite les doublons si possible, mais afficher le fichier est toujours utile
                         res.push({
                             name: "📂 " + t.name, 
                             price: "---",

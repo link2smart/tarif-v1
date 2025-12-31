@@ -37,6 +37,10 @@
         // Configuration PDF.js
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
+        // --- CONFIGURATION STATIQUE (DROPBOX UNIQUEMENT) ---
+        // Remplissez ceci pour une connexion automatique sur tous les appareils (Optionnel)
+        const HARDCODED_DBX_TOKEN = ""; // Ex: "sl.BHz..."
+
         // --- CITATIONS ---
         const QUOTES = [
             { text: "La seule façon de faire du bon travail est d'aimer ce que vous faites.", author: "Steve Jobs" },
@@ -188,7 +192,12 @@
             const [tarifs, setTarifs] = useState([]);
             const [fiches, setFiches] = useState([]); 
             const [dbHistory, setDbHistory] = useState([]); // Historique des MAJ
-            const [dbxConfig, setDbxConfig] = useState({ token: '', pathTarifs: '/Tarifs', pathFT: '/Fiches', geminiKey: '' });
+            const [dbxConfig, setDbxConfig] = useState({ 
+                token: HARDCODED_DBX_TOKEN, 
+                pathTarifs: '/Tarifs', 
+                pathFT: '/Fiches', 
+                geminiKey: '' // Manuel uniquement
+            });
             
             // UI STATE
             const [view, setView] = useState('login'); 
@@ -214,7 +223,7 @@
             const uploadInputRef = useRef(null);
             const adminFileInputRef = useRef(null);
 
-            // INIT
+            // INIT & LOCAL STORAGE
             useEffect(() => {
                 const storedConfig = localStorage.getItem('tdbx_config');
                 const storedUsers = localStorage.getItem('tdbx_users');
@@ -222,7 +231,13 @@
                 const storedFiches = localStorage.getItem('tdbx_fiches');
                 const storedHistory = localStorage.getItem('tdbx_history');
 
-                if (storedConfig) setDbxConfig(JSON.parse(storedConfig));
+                if (storedConfig) {
+                    const parsedConfig = JSON.parse(storedConfig);
+                    // Priorité au token hardcodé si présent
+                    if(HARDCODED_DBX_TOKEN) parsedConfig.token = HARDCODED_DBX_TOKEN;
+                    // On ne force PAS la clé Gemini, elle doit venir du localStorage ou être entrée
+                    setDbxConfig(parsedConfig);
+                }
                 if (storedUsers) setUsers(JSON.parse(storedUsers));
                 if (storedTarifs) setTarifs(JSON.parse(storedTarifs));
                 if (storedFiches) setFiches(JSON.parse(storedFiches));
@@ -235,25 +250,66 @@
             useEffect(() => { if(currentUser) localStorage.setItem('tdbx_fiches', JSON.stringify(fiches)); }, [fiches, currentUser]);
             useEffect(() => { if(currentUser) localStorage.setItem('tdbx_history', JSON.stringify(dbHistory)); }, [dbHistory, currentUser]);
 
-            // AUTO-LOAD pour collaborateur
+            // AUTO-LOAD & RESTORE
             useEffect(() => {
-                if (currentUser && currentUser.role === 'viewer' && dbxConfig.token && activeTab === 'search') {
+                if (currentUser && dbxConfig.token && activeTab === 'search') {
+                    // Si on a un token mais pas de données (nouvel appareil), on charge tout
                     if (tarifs.length === 0 || fiches.length === 0) loadCloudDatabase();
                 }
-            }, [currentUser, activeTab]);
+            }, [currentUser, activeTab, dbxConfig.token]);
 
             // Compteur de recherche
             useEffect(() => {
                 if (searchQuery.length > 3 && currentUser) {
                     const timer = setTimeout(() => {
-                        // Incrémenter le compteur de l'utilisateur actuel
                         setUsers(prevUsers => prevUsers.map(u => 
                             u.id === currentUser.id ? { ...u, searchCount: (u.searchCount || 0) + 1 } : u
                         ));
-                    }, 2000); // Debounce pour ne pas compter chaque lettre
+                    }, 2000); 
                     return () => clearTimeout(timer);
                 }
             }, [searchQuery]);
+
+            // --- FONCTION CENTRALE DE SAUVEGARDE CLOUD ---
+            const saveToCloud = async (newTarifs, newFiches, newHistory, newUsers) => {
+                const dataToSave = {
+                    meta: { date: new Date().toLocaleString(), user: currentUser?.name || 'System' },
+                    history: newHistory || dbHistory,
+                    tarifs: newTarifs || tarifs,
+                    fiches: newFiches || fiches,
+                    users: newUsers || users 
+                };
+                
+                await dbxUploadFile(dbxConfig.token, '/db_tarifs.json', new Blob([JSON.stringify(dataToSave)], { type: 'application/json' }));
+            };
+
+            // --- FONCTION DE CHARGEMENT / RESTAURATION ---
+            const loadCloudDatabase = async () => {
+                if (!dbxConfig.token) return;
+                setSyncStatus('working');
+                setSyncLog("Restauration depuis le Cloud...");
+                try {
+                    const blob = await dbxDownloadFile(dbxConfig.token, '/db_tarifs.json');
+                    const text = await blob.text();
+                    const data = JSON.parse(text);
+                    
+                    if (data.tarifs) setTarifs(data.tarifs);
+                    if (data.fiches) setFiches(data.fiches);
+                    if (data.history) setDbHistory(data.history);
+                    if (data.users && Array.isArray(data.users)) {
+                        setUsers(data.users);
+                        const updatedCurrentUser = data.users.find(u => u.id === currentUser.id);
+                        if(updatedCurrentUser) setCurrentUser(updatedCurrentUser);
+                    }
+
+                    setSyncLog("✅ Données et utilisateurs restaurés avec succès.");
+                    setSyncStatus('success');
+                } catch (e) {
+                    console.error(e);
+                    setSyncLog("⚠️ Aucune sauvegarde trouvée ou erreur : " + e.message);
+                    setSyncStatus('error');
+                }
+            };
 
             // --- LOGIQUE METIER ---
 
@@ -267,12 +323,14 @@
                     setView('dashboard');
                     setSearchQuery('');
                     
-                    // Tirage Citation
                     const randomQuote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
                     setCurrentQuote(randomQuote);
                     setShowQuoteModal(true);
 
-                    if (user.role === 'viewer' && !dbxConfig.token) setShowConfigModal(true);
+                    // Si pas de token (ni local ni hardcodé), on demande
+                    if (!dbxConfig.token) {
+                        setShowConfigModal(true);
+                    }
                 } else {
                     setLoginError('Identifiants incorrects');
                 }
@@ -283,7 +341,7 @@
                 setView('login');
                 setLoginForm({ username: '', password: '' });
                 setSearchQuery('');
-                setActiveTab('search'); // Réinitialisation de l'onglet actif
+                setActiveTab('search');
             };
 
             const openFile = async (path) => {
@@ -294,31 +352,52 @@
                 } catch(e) { alert("Impossible d'ouvrir le fichier : " + e.message); }
             };
 
-            const handleAddUser = (newUser) => {
-                let updatedUsers = [...users, { ...newUser, searchCount: 0 }];
-                if (newUser.role === 'admin') updatedUsers = updatedUsers.filter(u => !(u.id === 'admin' && u.pass === 'admin'));
+            const handleUserSubmit = async (e) => {
+                e.preventDefault();
+                const newUser = { 
+                    name: userFormData.name, 
+                    id: userFormData.login, 
+                    pass: userFormData.pass, 
+                    role: userFormData.role,
+                    searchCount: 0 
+                };
+
+                let updatedUsers = [...users];
+                
+                if (editingUserIdx !== null) {
+                    updatedUsers[editingUserIdx] = { ...updatedUsers[editingUserIdx], ...newUser };
+                    setEditingUserIdx(null);
+                } else {
+                    if(users.find(u => u.id === newUser.id)) return alert("ID existant");
+                    updatedUsers.push(newUser);
+                    if (newUser.role === 'admin') updatedUsers = updatedUsers.filter(u => !(u.id === 'admin' && u.pass === 'admin'));
+                }
+                
                 setUsers(updatedUsers);
+                setUserFormData({ name: '', login: '', pass: '', role: 'viewer' });
+                
+                try {
+                    await saveToCloud(null, null, null, updatedUsers);
+                    alert("Utilisateur enregistré et synchronisé !");
+                } catch(err) {
+                    alert("Utilisateur local ok, mais erreur sync cloud : " + err.message);
+                }
             };
 
-            // SUPPRESSION ENTREE (Tarif ou Fiche)
             const handleDeleteEntry = async (type, id, name) => {
-                if(!confirm(`Êtes-vous sûr de vouloir supprimer "${name}" de l'index ?\nCela ne supprime pas le fichier sur Dropbox, seulement l'entrée dans l'application.`)) return;
-                
+                if(!confirm(`Supprimer "${name}" de l'index ?`)) return;
                 setSyncStatus('working');
                 setSyncLog(`Suppression index : ${name}...`);
 
                 let newTarifs = [...tarifs];
                 let newFiches = [...fiches];
 
-                if(type === 'tarif') {
-                    newTarifs = newTarifs.filter(t => t.id !== id);
-                    setTarifs(newTarifs);
-                } else {
-                    newFiches = newFiches.filter(f => f.id !== id);
-                    setFiches(newFiches);
-                }
+                if(type === 'tarif') newTarifs = newTarifs.filter(t => t.id !== id);
+                else newFiches = newFiches.filter(f => f.id !== id);
 
-                // Mise à jour de la DB Cloud pour tous
+                setTarifs(newTarifs);
+                setFiches(newFiches);
+
                 try {
                     const newHistoryEntry = {
                         date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString(),
@@ -328,38 +407,34 @@
                     const updatedHistory = [newHistoryEntry, ...dbHistory].slice(0, 10);
                     setDbHistory(updatedHistory);
 
-                    const dbExport = { history: updatedHistory, tarifs: newTarifs, fiches: newFiches };
-                    await dbxUploadFile(dbxConfig.token, '/db_tarifs.json', new Blob([JSON.stringify(dbExport)], { type: 'application/json' }));
+                    await saveToCloud(newTarifs, newFiches, updatedHistory, users);
                     
-                    setSyncLog(`✅ Entrée "${name}" supprimée de la base.`);
+                    setSyncLog(`✅ Entrée "${name}" supprimée.`);
                     setSyncStatus('success');
                 } catch(e) {
-                    setSyncLog(`❌ Erreur MAJ Cloud après suppression : ${e.message}`);
+                    setSyncLog(`❌ Erreur MAJ Cloud : ${e.message}`);
                     setSyncStatus('error');
                 }
             };
 
-            // Upload Fiche
             const handleUploadFiche = async (e) => {
                 const file = e.target.files[0];
-                if (!file) return;
-                if (!dbxConfig.token) return alert("Token manquant.");
+                if (!file || !dbxConfig.token) return alert("Fichier ou Token manquant.");
 
                 setIsUploading(true);
                 try {
                     const targetPath = `${dbxConfig.pathFT || '/Fiches'}/${file.name}`;
                     await dbxUploadFile(dbxConfig.token, targetPath, file);
                     
-                    // Ajout index_date pour cohérence
                     const newFiche = { 
-                        id: 'local_' + Date.now(), 
-                        name: file.name, 
-                        path: targetPath, 
-                        type: 'ft', 
-                        server_modified: new Date().toISOString(),
-                        index_date: new Date().toLocaleString() 
+                        id: 'local_' + Date.now(), name: file.name, path: targetPath, type: 'ft', 
+                        server_modified: new Date().toISOString(), index_date: new Date().toLocaleString() 
                     };
-                    setFiches(prev => [newFiche, ...prev]);
+                    const newFichesList = [newFiche, ...fiches];
+                    setFiches(newFichesList);
+                    
+                    saveToCloud(null, newFichesList, null, null).catch(console.error);
+
                     alert(`Fiche "${file.name}" ajoutée !`);
                 } catch (err) { alert("Erreur upload: " + err.message); } finally { setIsUploading(false); if(uploadInputRef.current) uploadInputRef.current.value = ''; }
             };
@@ -406,7 +481,6 @@
                 }
             };
 
-            // ADMIN : Gestion Tarifs Manuelle
             const handleManualTarifUpload = async (e) => {
                 e.preventDefault();
                 const file = adminFileInputRef.current?.files[0];
@@ -432,7 +506,6 @@
                     newTarifs.push(docEntry);
                     setTarifs(newTarifs);
 
-                    // Update History
                     const newHistoryEntry = {
                         date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString(),
                         user: currentUser.name,
@@ -441,8 +514,7 @@
                     const updatedHistory = [newHistoryEntry, ...dbHistory].slice(0, 10);
                     setDbHistory(updatedHistory);
 
-                    const dbExport = { history: updatedHistory, tarifs: newTarifs, fiches: fiches };
-                    await dbxUploadFile(dbxConfig.token, '/db_tarifs.json', new Blob([JSON.stringify(dbExport)], { type: 'application/json' }));
+                    await saveToCloud(newTarifs, fiches, updatedHistory, users);
 
                     setSyncLog(`✅ ${file.name} traité.`);
                     setSyncStatus('success');
@@ -450,7 +522,6 @@
                 finally { if (adminFileInputRef.current) adminFileInputRef.current.value = ''; }
             };
 
-            // ADMIN : Sync Global
             const runFullSync = async (forceAll = false) => {
                 setSyncStatus('working');
                 setSyncLog("Scan global...");
@@ -483,20 +554,14 @@
                     if (dbxConfig.pathFT) {
                         try {
                             const listFT = await dbxListFolder(dbxConfig.token, dbxConfig.pathFT);
-                            // Ajout de index_date pour les fiches lors du scan
                             currentFiches = listFT.entries.filter(e => e['.tag'] === 'file').map(f => ({
-                                id: f.id, 
-                                name: f.name, 
-                                path: f.path_lower, 
-                                type: 'ft', 
-                                server_modified: f.server_modified,
-                                index_date: new Date().toLocaleString() // Date actuelle du scan
+                                id: f.id, name: f.name, path: f.path_lower, type: 'ft', server_modified: f.server_modified,
+                                index_date: new Date().toLocaleString()
                             }));
                             setFiches(currentFiches);
                         } catch(e) {}
                     }
 
-                    // Update History
                     const newHistoryEntry = {
                         date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString(),
                         user: currentUser.name,
@@ -505,26 +570,10 @@
                     const updatedHistory = [newHistoryEntry, ...dbHistory].slice(0, 10);
                     setDbHistory(updatedHistory);
 
-                    const dbExport = { history: updatedHistory, tarifs: currentTarifs, fiches: currentFiches };
-                    await dbxUploadFile(dbxConfig.token, '/db_tarifs.json', new Blob([JSON.stringify(dbExport)], { type: 'application/json' }));
+                    await saveToCloud(currentTarifs, currentFiches, updatedHistory, users);
                     setSyncLog("Terminé.");
                     setSyncStatus('success');
                 } catch(e) { setSyncLog("Erreur Sync: " + e.message); setSyncStatus('error'); }
-            };
-
-            const loadCloudDatabase = async () => {
-                if (!dbxConfig.token) return;
-                setSyncStatus('working');
-                try {
-                    const blob = await dbxDownloadFile(dbxConfig.token, '/db_tarifs.json');
-                    const text = await blob.text();
-                    const data = JSON.parse(text);
-                    setTarifs(data.tarifs || []);
-                    setFiches(data.fiches || []);
-                    setDbHistory(data.history || []);
-                    setSyncLog("Données chargées.");
-                    setSyncStatus('success');
-                } catch (e) { setSyncStatus('error'); }
             };
 
             // RENDER SEARCH
@@ -562,7 +611,7 @@
             return (
                 <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans relative">
                     
-                    {/* MODAL CITATION (Motivation) */}
+                    {/* MODAL CITATION */}
                     {showQuoteModal && currentQuote && (
                         <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-center justify-center p-6 animate-fade">
                             <div className="max-w-2xl w-full text-center text-white">
@@ -576,14 +625,14 @@
                         </div>
                     )}
 
-                    {/* MODAL CONFIG */}
+                    {/* MODAL CONFIG (RESTAURATION) */}
                     {showConfigModal && (
                         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                             <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full animate-fade">
-                                <h2 className="text-xl font-bold mb-2">Configuration Requise</h2>
-                                <p className="text-slate-500 text-sm mb-6">Entrez le Token Dropbox fourni par votre administrateur.</p>
+                                <h2 className="text-xl font-bold mb-2">Restauration Cloud</h2>
+                                <p className="text-slate-500 text-sm mb-6">Nouvel appareil détecté. Entrez le Token pour restaurer vos données et utilisateurs.</p>
                                 <input type="password" placeholder="Token Dropbox..." className="w-full p-3 border rounded-xl mb-4 text-sm font-mono outline-none focus:ring-2 focus:ring-blue-500" value={dbxConfig.token} onChange={e => setDbxConfig({...dbxConfig, token: e.target.value})} />
-                                <button onClick={() => { if(dbxConfig.token) { setShowConfigModal(false); loadCloudDatabase(); } }} className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">Valider</button>
+                                <button onClick={() => { if(dbxConfig.token) { setShowConfigModal(false); loadCloudDatabase(); } }} className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">Valider & Restaurer</button>
                             </div>
                         </div>
                     )}
@@ -810,7 +859,7 @@
                             <div className="max-w-xl mx-auto space-y-8 animate-fade">
                                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
                                     <h3 className="font-bold text-lg mb-6 flex items-center gap-2"><Icon name={editingUserIdx !== null ? "Edit" : "UserPlus"}/> {editingUserIdx !== null ? "Modifier" : "Créer un accès"}</h3>
-                                    <form onSubmit={(e) => { e.preventDefault(); const newUser = { name: userFormData.name, id: userFormData.login, pass: userFormData.pass, role: userFormData.role, searchCount: 0 }; let updatedUsers = [...users]; if (editingUserIdx !== null) { updatedUsers[editingUserIdx] = newUser; setEditingUserIdx(null); } else { if(users.find(u => u.id === newUser.id)) return alert("ID existant"); updatedUsers.push(newUser); if (newUser.role === 'admin') updatedUsers = updatedUsers.filter(u => !(u.id === 'admin' && u.pass === 'admin')); } setUsers(updatedUsers); setUserFormData({ name: '', login: '', pass: '', role: 'viewer' }); }} className="grid gap-4">
+                                    <form onSubmit={handleUserSubmit} className="grid gap-4">
                                         <div className="grid grid-cols-2 gap-4"><input value={userFormData.name} onChange={e => setUserFormData({...userFormData, name: e.target.value})} name="name" placeholder="Nom Complet" required className="p-3 border rounded-xl text-sm" /><select value={userFormData.role} onChange={e => setUserFormData({...userFormData, role: e.target.value})} name="role" className="p-3 border rounded-xl text-sm bg-white"><option value="viewer">Collaborateur</option><option value="admin">Administrateur</option></select></div>
                                         <div className="grid grid-cols-2 gap-4"><input value={userFormData.login} onChange={e => setUserFormData({...userFormData, login: e.target.value})} name="login" placeholder="Identifiant" required className="p-3 border rounded-xl text-sm" /><input value={userFormData.pass} onChange={e => setUserFormData({...userFormData, pass: e.target.value})} name="pass" placeholder="Mot de passe" required className="p-3 border rounded-xl text-sm" /></div>
                                         <div className="flex gap-2 mt-2"><button className="flex-1 bg-slate-800 text-white py-3 rounded-xl font-bold hover:bg-slate-900 transition-colors">{editingUserIdx !== null ? "Enregistrer" : "Ajouter"}</button>{editingUserIdx !== null && (<button type="button" onClick={() => { setEditingUserIdx(null); setUserFormData({ name: '', login: '', pass: '', role: 'viewer' }); }} className="bg-slate-100 text-slate-500 py-3 px-4 rounded-xl font-bold hover:bg-slate-200">Annuler</button>)}</div>

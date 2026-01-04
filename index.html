@@ -64,19 +64,29 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
         // --- SECURITE (OBFUSCATION) ---
-        const _d = (s) => { try { return atob(s); } catch(e) { return ""; } };
+        // Utilisé uniquement pour les clés statiques (App Key/Secret)
+        const _d = (s) => { 
+            if(!s) return "";
+            if(s.startsWith("AIza")) return s; 
+            try { return atob(s); } catch(e) { return s; } 
+        };
 
-        // --- CONFIGURATION PERMANENTE OBFUSQUÉE (ADMIN) ---
-        // Les clés sont maintenant encodées en Base64 pour ne pas être lisibles directement
-        const HARDCODED_APP_KEY = "MGp4ZTNoNWhqOXZtMmxr"; // Clé encodée
-        const HARDCODED_APP_SECRET = "dzM5c3VubWMxMGlhY3Ju"; // Secret encodé
-        const HARDCODED_REFRESH_TOKEN = "RCuckeNbQMEAAAAAAAAAAe3T5YxLsfShxGUHVth0BiLTS1VwcU0Jx3-SGLdI5J1v"; // Token encodé
-        const HARDCODED_GEMINI_KEY = "";   // À encoder si vous le souhaitez (via atob)
+        // --- CONFIGURATION PERMANENTE (ADMIN) ---
+        // 1. App Key et Secret (Déjà encodés, ne pas toucher)
+        const HARDCODED_APP_KEY = "MGp4ZTNoNWhqOXZtMmxr"; 
+        const HARDCODED_APP_SECRET = "dzM5c3VubWMxMGlhY3Ju"; 
 
-        // Token de secours (Utilisé uniquement si les champs ci-dessus sont vides)
-        const HARDCODED_DBX_TOKEN = "sl.u.AGNfi6dpn3OFF0iwMt2YWKrXQPCBk9WhThHZjSOxyR6XwFQFfq4ZBCUQqGgyeYThtWx-clnclh4ibhqOJYq8URbMFSO7o8dH0wpsv-cvPFS4CTI_fVEgvkRu0Mstv6uATcBireQO0Nic7fGXE61r6Z0B7y7fetsR-wJLStIugVeuYrcKDylZ25HIN2_UqVaVmsGnKggLlnypRmtOPiE4wIDtK6WoQbDEJywSotHYgSkOy13jutfwMi5CXvNkScstsxrYK9B1qE6KE4YTGU5swho5u0Gs7vlmERaUbaewcQf00YkrriYj1VFV35Y4-3l15kVxpdaVpB-mtFTnY4vjYJ_EJnKRk-C9F02M6zE8wKzWJNTAbfa0Pfm1NlQRKprtv4TZcOJfR39zNgxnK96eteXIg7YCkortY122aOh9tRrq0X8z69_VO0u2NdDnYsrX8luKybf3O8YyDn4R0c7ONo1fGyrcVtfcCZ6YBWmNR-CT1TEdniGwNSokHcjYK8n_HoRTP0226FBY0CTn0ZI02usi-9C3mdkpL7o-64UOJ-BcWJj5l8MULbMSF_Schh8j58AF8ZlcCrN-PA2w3IPAtE90WfkVVSG7uQp8xCC6oR0Vh-wMQ7VdTL29tQrEJ9h9MfMk_wJvjKuV4PbgdQiVX0ATmSsbfPOdUadMDAZvJWuOMQ8khanPym-ColgE2AoU-oaMkgE93kwxUFIgWX5FwtAL77KGorowNKk9v45geF-rkGdn6Khi8w9ZhG9BjUMlfkn_cxHVzD9sh8goxXqVXsw6IYDcq2-ILIIU7F3OnlielMyFRyh1tQTOaQPZzArZ_ZmAu7hpuUInqoa3kbkH71isRpdRaeKEQvLV2tJH5h0ytyEm2WCgIwbSP3obOs6Ag4cOJGLD2gKRds6PKUGakauJE7xunNeenm6ozNXjdeJEM_-JXwdVHrJuH2WD0huwlfN6ZvatM39Doga1XNCFj91cYFUlIS86FwTyWWKKbnnFXlKaKcTTJI32TWzYcj7nFsesCxVAjDc9rwD4Sg2LGOXxHBLFFu0MkV9vvSCRybCTb2BP8vObpHdsQjalIC8778e1kNcg4z4J5xyzAXn82idxs0eG8j6o6LKndkRqDkSsVwFfkVGe9uDdNEDpzvr02xAiT5sTfbbVfG_VC9Q6MIYX5YpP25O_O_d5z9Wa8V9QAN8ocZ8NHOUpkbPWAegI7Yy0Q-earUEdn2xf9KonmuZMUXmrR2FjcGNYEWXylyvLDuZdt_MJsfZtPyHTGyb7TMhhEuj8BgaxtrvP6uk8Zvxx"; 
+        // 2. REFRESH TOKEN : COLLEZ VOTRE TOKEN ICI (EN TEXTE CLAIR)
+        // Récupérez-le depuis l'onglet Admin > Paramètres de votre version qui fonctionne
+        const HARDCODED_REFRESH_TOKEN = "DCsa3Hnd2VEAAAAAAAAB88Sq02Sff3aNDDJcsnQQxzw"; 
+
+        // 3. Clé Gemini (Facultatif)
+        const HARDCODED_GEMINI_KEY = "";   
+
+        // Token de secours (Utilisé uniquement pour le tout premier affichage si le reste échoue)
+        const HARDCODED_DBX_TOKEN = "sl.u.AGO-7_zCj-hNeU0YQyySLMi4xSMWWJTtlmLpRol3vvQqh9jsbrtRYLcoYcwpOBNaoIXUpMuHSSrsLD49bMUsuPicrOrNUeN8jA_0xgE1kWOqlxiad1G2uDIgSeB5KYw_uaYbjXMz62_5-cQsg8ytycl3EW31fKDT-V82OxGzGwSBLba22gbLUGp_u7LY-dqM5iHl-_LbC81V5AoV8oqnQU19yV0v_hKf54ORsdTCLkYMau3en8znWUb1HqpbNyPaGpPK7QTeFlMdGzMovdb6RelRW_l993BXcXUuhWzLYsNj_jeOAsfP47pagoDuINkLP7WY1dor2s9KTktI_xj1qBAhqAiR2KNqK_zmdg-n53KGO7le8Wa5yI1ByXcAogxoj7w5bnQQEQIhMqknhct0enXAhiCoCGmt6C0tSX6V9gnCasRsJwLxWvjvfCnePN3mL10Iiz_YeBRzlq7WUBteKCl33kUWczxmGAyALMDMpiUzbb4CWkZen9ozyGDSzPfKbDCjVB_mThFw6EEV7ZlO1HCfjPEwdRU_VJuGpt7h2VvpekakEZoQQRuUuw7SNnpbQ05dEN-0G2U2B_Ghj8VgZOib79TW1RWwahwH7xdS9MZxvA87M047YapzKE-w7CsowE-iKuJHs2Ys2QTH83SkNEbFgqE8xP6uSEO5xsVfEXGD904m4zLGNSy0bz8FDr65Uy2ow_YMZRQ0bpyd-lEdDo2XwRW0nRtZJOtOvIdwIiSGSC5xuF_pEY1SazEy2n9SP8M0Oz8ZT0EvS-T2k1qO52d8eyEpmWXMHW9K2jYdwK-dnH8CdVHOQC84GXIJ-2ko5dOB5UwWdWa4gdwMABwCHRladxUU5fwDQy3BnVZfQSPG5zFWB0XIvLgNSSY3A3SRAQmI-_fJzA7B0YTUFZXXlYn3X4ba3s5gsPMH4oyXxWXk3KOopEtbfOv7KAmCvvtVO7MGN10ts2YjVZ8XD3fHJexU0GKBUAbn4xVOV17lEBp9xWAB9p9Mil8XzhXv2c0jFlxYxHrH1gDb855-QUem9ddDe6eXwO_Ax6xpQnPztWYEq12nXkPAeNbqxF_-WjUkiR9miRsbuUVEA_LqMGQAHRFoYlLnnaCLdPIFZftUUkckzC2QTzIkQ795BohuMgWCzMb4cIUbwTqlcIEI4rvdU6SgUIthuhNu5FTatgJDVCaobZolJG5OQRasXZ7l6cmo6mdGYqkga9uYEiZglilW9TzACoC0RdAjKA_rpK7EPLdk0YYig838iXhz883Xjpqz1XNCa7ixtYf5I2kHO3upU1OZ"; 
         
-        // Comptes par défaut (toujours disponibles en secours)
+        // Comptes par défaut
         const DEFAULT_USERS = [
             { id: 'admin', pass: 'admin', role: 'admin', name: 'Administrateur', searchCount: 0 },
             { id: 'collab', pass: '1234', role: 'viewer', name: 'Collaborateur', searchCount: 0 }
@@ -157,7 +167,6 @@
                     if (!res.ok) {
                         const errorText = await res.text();
                         // DÉTECTION INTELLIGENTE DE L'ERREUR D'EXPIRATION
-                        // Si le token est expiré et qu'on n'a pas pu le rafraîchir (pas de refresh token sur ce device)
                         if (errorText.includes("expired_access_token") || errorText.includes("invalid_access_token")) {
                             throw new Error("EXPIRED_TOKEN_ALERT");
                         }
@@ -313,7 +322,7 @@
             // Initialisation de la config avec décodage
             const [dbxConfig, setDbxConfig] = useState({ 
                 token: HARDCODED_DBX_TOKEN, 
-                refreshToken: _d(HARDCODED_REFRESH_TOKEN) || '', 
+                refreshToken: HARDCODED_REFRESH_TOKEN || '', // Direct value, no decoding for refresh token to avoid errors
                 appKey: _d(HARDCODED_APP_KEY) || '', 
                 appSecret: _d(HARDCODED_APP_SECRET) || '', 
                 pathTarifs: '/Tarifs', 
@@ -368,7 +377,7 @@
                     if(HARDCODED_DBX_TOKEN && !parsed.token) parsed.token = HARDCODED_DBX_TOKEN;
                     
                     // Gestion de la priorité des clés obfusquées hardcodées
-                    const decodedRefresh = _d(HARDCODED_REFRESH_TOKEN);
+                    const decodedRefresh = HARDCODED_REFRESH_TOKEN; // No decode
                     const decodedKey = _d(HARDCODED_APP_KEY);
                     const decodedSecret = _d(HARDCODED_APP_SECRET);
                     const decodedGemini = _d(HARDCODED_GEMINI_KEY);
@@ -384,7 +393,7 @@
                     setDbxConfig(prev => ({
                         ...prev, 
                         token: HARDCODED_DBX_TOKEN,
-                        refreshToken: _d(HARDCODED_REFRESH_TOKEN),
+                        refreshToken: HARDCODED_REFRESH_TOKEN, // No decode
                         appKey: _d(HARDCODED_APP_KEY),
                         appSecret: _d(HARDCODED_APP_SECRET),
                         geminiKey: _d(HARDCODED_GEMINI_KEY)
@@ -682,7 +691,11 @@
             const handleManualTarifUpload = async (e) => {
                 e.preventDefault();
                 const file = adminFileInputRef.current?.files[0];
-                if (!file || !dbxConfig.geminiKey) return alert("Erreur config/fichier.");
+                
+                // AMELIORATION DIAGNOSTIC
+                if (!file) return alert("Veuillez sélectionner un fichier PDF.");
+                if (!dbxConfig.geminiKey) return alert("Clé API Gemini manquante. Veuillez la configurer dans l'onglet Admin > Paramètres ou dans le code source.");
+
                 setSyncStatus('working');
                 setSyncLog("Traitement manuel...");
                 setShowAdminUploadModal(false);
@@ -1363,6 +1376,4 @@
         root.render(<App />);
     </script>
 </body>
-
 </html>
-

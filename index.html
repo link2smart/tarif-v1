@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TarifiersDBX-V1 (Secure)</title>
+    <title>TarifiersDBX-V1 (Stable & Connecté)</title>
     <!-- React & UI -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -669,8 +669,141 @@
                 <ErrorBoundary>
                     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans relative">
                         {isFileLoading && <div className="fixed inset-0 z-[110] bg-white/50 backdrop-blur-sm flex items-center justify-center animate-fade"><div className="bg-white p-6 rounded-2xl shadow-2xl flex flex-col items-center border border-slate-100"><div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div><div className="font-bold text-slate-800">Chargement...</div></div></div>}
-                        {calcState.show && (<div className="fixed inset-0 z-[120] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade"><div className="bg-white p-6 rounded-3xl shadow-2xl max-w-sm w-full relative"><button onClick={() => setCalcState({ ...calcState, show: false })} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><Icon name="X"/></button><h3 className="font-bold text-lg mb-1 flex items-center gap-2"><Icon name="Calculator" className="text-blue-600"/> Calculatrice</h3><p className="text-xs text-slate-500 mb-6 truncate">{calcState.product.name}</p><div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4"><div className="flex justify-between text-sm mb-1"><span className="text-slate-500">Base ({calcState.baseLabel})</span><span className="font-bold text-slate-700">{calcState.basePrice.toFixed(2)} DH</span></div><div className="flex items-center gap-2 mt-3"><div className="grow"><label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Remise Suppl. (%)</label><input type="number" min="0" max="100" autoFocus className="w-full p-2 border rounded-lg text-lg font-bold text-center outline-none focus:ring-2 focus:ring-blue-500" placeholder="0" value={extraDiscount} onChange={e => setExtraDiscount(e.target.value)} /></div></div></div><div className="text-center"><div className="text-xs text-slate-400 font-bold uppercase mb-1">Prix Final</div><div className="text-4xl font-black text-blue-600 tracking-tight">{(calcState.basePrice * (1 - (parseFloat(extraDiscount)||0)/100)).toFixed(2)} <span className="text-sm">DH</span></div></div></div></div>)}
-                        {viewingReport && (/* ... Report Modal Code ... */ <div className="fixed inset-0 z-[120] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade"><div className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full relative flex flex-col max-h-[85vh] overflow-hidden"><div className="bg-slate-900 text-white p-6 relative"><button onClick={() => setViewingReport(null)} className="absolute top-6 right-6 text-slate-400 hover:text-white"><Icon name="X" size={24}/></button><h3 className="font-black text-2xl mb-1 flex items-center gap-3"><Icon name="TrendingUp" className="text-blue-400"/> Rapport de Fluctuation</h3><p className="text-sm text-slate-400 font-mono opacity-80">Mise à jour du : {viewingReport.date}</p></div><div className="grid grid-cols-3 gap-1 p-1 bg-slate-100"><div className="bg-white p-4 text-center"><div className="text-2xl font-black text-orange-600">{viewingReport.changed?.length || 0}</div><div className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Modifiés</div></div><div className="bg-white p-4 text-center"><div className="text-2xl font-black text-green-600">{viewingReport.added?.length || 0}</div><div className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Ajoutés</div></div><div className="bg-white p-4 text-center"><div className="text-2xl font-black text-red-600">{viewingReport.removed?.length || 0}</div><div className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Retirés</div></div></div><div className="flex-1 overflow-y-auto p-6 space-y-8 modern-scroll bg-slate-50">{viewingReport.changed?.length > 0 && (<div><h4 className="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-orange-500"></div> Prix Modifiés</h4><div className="grid grid-cols-1 gap-3">{viewingReport.changed.map((item, idx) => (<div key={idx} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between"><div><div className="font-bold text-slate-800 text-sm">{item.name}</div>{item.packaging && <div className="inline-block mt-1 bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wide">{item.packaging}</div>}</div><div className="flex items-center gap-4 text-sm"><div className="text-right"><div className="text-slate-400 line-through text-xs">{item.oldPrice}</div><div className="font-bold text-slate-800">{item.newPrice} <span className="text-[10px] text-slate-400">{item.unit}</span></div></div><div className={`flex items-center gap-1 px-2 py-1 rounded-lg font-bold text-xs ${item.diff > 0 ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>{item.diff > 0 ? <Icon name="TrendingUp" size={14}/> : <Icon name="TrendingDown" size={14}/>}{item.diff > 0 ? '+' : ''}{item.diff}</div></div></div>))}</div></div>)}{viewingReport.added?.length > 0 && (<div><h4 className="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-green-500"></div> Nouveaux Articles</h4><div className="grid grid-cols-1 md:grid-cols-2 gap-3">{viewingReport.added.map((item, idx) => (<div key={idx} className="bg-white p-3 rounded-xl border border-green-100 shadow-sm flex justify-between items-center"><div><div className="font-bold text-slate-700 text-sm truncate max-w-[150px]">{item.name}</div>{item.packaging && <div className="inline-block mt-0.5 bg-indigo-50 text-indigo-600 text-[10px] font-bold px-1.5 rounded uppercase">{item.packaging}</div>}</div><div className="font-black text-green-600 text-sm">{item.price} <span className="text-[10px] text-green-400">{item.unit}</span></div></div>))}</div></div>)}{viewingReport.removed?.length > 0 && (<div><h4 className="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-red-500"></div> Articles Retirés</h4><div className="grid grid-cols-1 md:grid-cols-2 gap-3 opacity-60">{viewingReport.removed.map((item, idx) => (<div key={idx} className="bg-white p-3 rounded-xl border border-red-100 flex justify-between items-center"><div><div className="font-medium text-slate-700 text-sm line-through decoration-red-400">{item.name}</div>{item.packaging && <div className="text-[10px] text-slate-400">{item.packaging}</div>}</div><div className="text-slate-400 text-xs line-through">{item.price}</div></div>))}</div></div>)}{viewingReport.changed?.length === 0 && viewingReport.added?.length === 0 && viewingReport.removed?.length === 0 && (<div className="text-center py-12"><div className="inline-flex bg-slate-100 p-4 rounded-full text-slate-300 mb-3"><Icon name="CheckCircle" size={32}/></div><div className="text-slate-500 font-medium">Aucun changement détecté lors de cette mise à jour.</div></div>)}</div></div></div>)}
+                        
+                        {/* CALCULATRICE MODAL */}
+                        {calcState.show && (
+                            <div className="fixed inset-0 z-[120] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade">
+                                <div className="bg-white p-6 rounded-3xl shadow-2xl max-w-sm w-full relative">
+                                    <button onClick={() => setCalcState({ ...calcState, show: false })} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><Icon name="X"/></button>
+                                    <h3 className="font-bold text-lg mb-1 flex items-center gap-2"><Icon name="Calculator" className="text-blue-600"/> Calculatrice</h3>
+                                    <p className="text-xs text-slate-500 mb-6 truncate">{calcState.product.name}</p>
+                                    
+                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
+                                        <div className="flex justify-between text-sm mb-1">
+                                            <span className="text-slate-500">Base ({calcState.baseLabel})</span>
+                                            <span className="font-bold text-slate-700">{calcState.basePrice.toFixed(2)} DH</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-3">
+                                            <div className="grow">
+                                                <label className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Remise Suppl. (%)</label>
+                                                <input type="number" min="0" max="100" autoFocus className="w-full p-2 border rounded-lg text-lg font-bold text-center outline-none focus:ring-2 focus:ring-blue-500" placeholder="0" value={extraDiscount} onChange={e => setExtraDiscount(e.target.value)} />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="text-center">
+                                        <div className="text-xs text-slate-400 font-bold uppercase mb-1">Prix Final</div>
+                                        <div className="text-4xl font-black text-blue-600 tracking-tight">
+                                            {(calcState.basePrice * (1 - (parseFloat(extraDiscount)||0)/100)).toFixed(2)} <span className="text-sm">DH</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* REPORT VIEWER MODAL - MODERN DESIGN */}
+                        {viewingReport && (
+                            <div className="fixed inset-0 z-[120] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fade">
+                                <div className="bg-white rounded-3xl shadow-2xl max-w-3xl w-full relative flex flex-col max-h-[85vh] overflow-hidden">
+                                    {/* Header */}
+                                    <div className="bg-slate-900 text-white p-6 relative">
+                                        <button onClick={() => setViewingReport(null)} className="absolute top-6 right-6 text-slate-400 hover:text-white"><Icon name="X" size={24}/></button>
+                                        <h3 className="font-black text-2xl mb-1 flex items-center gap-3"><Icon name="TrendingUp" className="text-blue-400"/> Rapport de Fluctuation</h3>
+                                        <p className="text-sm text-slate-400 font-mono opacity-80">Mise à jour du : {viewingReport.date}</p>
+                                    </div>
+
+                                    {/* Dashboard Summary */}
+                                    <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100">
+                                        <div className="bg-white p-4 text-center">
+                                            <div className="text-2xl font-black text-orange-600">{viewingReport.changed?.length || 0}</div>
+                                            <div className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Modifiés</div>
+                                        </div>
+                                        <div className="bg-white p-4 text-center">
+                                            <div className="text-2xl font-black text-green-600">{viewingReport.added?.length || 0}</div>
+                                            <div className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Ajoutés</div>
+                                        </div>
+                                        <div className="bg-white p-4 text-center">
+                                            <div className="text-2xl font-black text-red-600">{viewingReport.removed?.length || 0}</div>
+                                            <div className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Retirés</div>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Content Scrollable */}
+                                    <div className="flex-1 overflow-y-auto p-6 space-y-8 modern-scroll bg-slate-50">
+                                        {/* Modifiés */}
+                                        {viewingReport.changed?.length > 0 && (
+                                            <div>
+                                                <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-orange-500"></div> Prix Modifiés</h4>
+                                                <div className="grid grid-cols-1 gap-3">
+                                                    {viewingReport.changed.map((item, idx) => (
+                                                        <div key={idx} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                                                            <div>
+                                                                <div className="font-bold text-slate-800 text-sm">{item.name}</div>
+                                                                {item.packaging && <div className="inline-block mt-1 bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wide">{item.packaging}</div>}
+                                                            </div>
+                                                            <div className="flex items-center gap-4 text-sm">
+                                                                <div className="text-right">
+                                                                    <div className="text-slate-400 line-through text-xs">{item.oldPrice}</div>
+                                                                    <div className="font-bold text-slate-800">{item.newPrice} <span className="text-[10px] text-slate-400">{item.unit}</span></div>
+                                                                </div>
+                                                                <div className={`flex items-center gap-1 px-2 py-1 rounded-lg font-bold text-xs ${item.diff > 0 ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
+                                                                    {item.diff > 0 ? <Icon name="TrendingUp" size={14}/> : <Icon name="TrendingDown" size={14}/>}
+                                                                    {item.diff > 0 ? '+' : ''}{item.diff}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Ajoutés */}
+                                        {viewingReport.added?.length > 0 && (
+                                            <div>
+                                                <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-green-500"></div> Nouveaux Articles</h4>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    {viewingReport.added.map((item, idx) => (
+                                                        <div key={idx} className="bg-white p-3 rounded-xl border border-green-100 shadow-sm flex justify-between items-center">
+                                                            <div>
+                                                                <div className="font-bold text-slate-700 text-sm truncate max-w-[150px]">{item.name}</div>
+                                                                {item.packaging && <div className="inline-block mt-0.5 bg-indigo-50 text-indigo-600 text-[10px] font-bold px-1.5 rounded uppercase">{item.packaging}</div>}
+                                                            </div>
+                                                            <div className="font-black text-green-600 text-sm">{item.price} <span className="text-[10px] text-green-400">{item.unit}</span></div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Retirés */}
+                                        {viewingReport.removed?.length > 0 && (
+                                            <div>
+                                                <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-red-500"></div> Articles Retirés</h4>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 opacity-60">
+                                                    {viewingReport.removed.map((item, idx) => (
+                                                        <div key={idx} className="bg-white p-3 rounded-xl border border-red-100 flex justify-between items-center">
+                                                            <div>
+                                                                <div className="font-medium text-slate-700 text-sm line-through decoration-red-400">{item.name}</div>
+                                                                {item.packaging && <div className="text-[10px] text-slate-400">{item.packaging}</div>}
+                                                            </div>
+                                                            <div className="text-slate-400 text-xs line-through">{item.price}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {viewingReport.changed?.length === 0 && viewingReport.added?.length === 0 && viewingReport.removed?.length === 0 && (
+                                            <div className="text-center py-12">
+                                                <div className="inline-flex bg-slate-100 p-4 rounded-full text-slate-300 mb-3"><Icon name="CheckCircle" size={32}/></div>
+                                                <div className="text-slate-500 font-medium">Aucun changement détecté lors de cette mise à jour.</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {viewingFile && (<div className="fixed inset-0 z-[100] bg-slate-900 flex flex-col animate-fade"><div className="flex items-center justify-between p-4 bg-slate-900 text-white border-b border-slate-700 shadow-xl z-20"><h3 className="font-bold truncate max-w-md flex items-center gap-2 text-sm md:text-base"><Icon name="FileText" size={18} className="text-blue-400"/> {viewingFile.name}</h3><div className="flex gap-2 items-center">{viewingFile.type === 'pdf' && pdfState.numPages > 1 && (<div className="hidden md:flex bg-slate-800 rounded-lg p-1 mr-2 items-center"><button onClick={() => changePage(-1)} className="p-1 hover:text-blue-400"><Icon name="ChevronLeft"/></button><span className="px-2 text-xs font-mono">{pdfState.pageNum} / {pdfState.numPages}</span><button onClick={() => changePage(1)} className="p-1 hover:text-blue-400"><Icon name="ChevronRight"/></button></div>)}{viewingFile.type === 'pdf' && (<div className="hidden md:flex bg-slate-800 rounded-lg p-1 mr-2"><button onClick={() => zoomPdf(-0.2)} className="p-1 hover:text-blue-400"><Icon name="Minus" size={16}/></button><button onClick={() => zoomPdf(0.2)} className="p-1 hover:text-blue-400"><Icon name="Plus" size={16}/></button></div>)}<a href={viewingFile.url} download={viewingFile.name} className="p-2 bg-slate-800 hover:bg-blue-600 rounded-lg text-slate-300 hover:text-white transition-colors" title="Sauvegarder"><Icon name="Download" size={18}/></a><button onClick={closeViewer} className="p-2 bg-red-600 hover:bg-red-700 rounded-lg text-white transition-colors" title="Fermer"><Icon name="X" size={18}/></button></div></div><div className="flex-1 relative bg-gray-800 overflow-auto flex justify-center p-4">{viewingFile.type === 'pdf' ? (<div className="relative shadow-2xl"><canvas ref={canvasRef} className="max-w-full h-auto bg-white"/>{pdfState.numPages > 1 && (<div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white px-4 py-2 rounded-full flex gap-4 items-center shadow-xl backdrop-blur-sm border border-slate-700"><button onClick={() => changePage(-1)}><Icon name="ChevronLeft"/></button><span className="text-xs font-bold">{pdfState.pageNum}/{pdfState.numPages}</span><button onClick={() => changePage(1)}><Icon name="ChevronRight"/></button></div>)}</div>) : (<img src={viewingFile.url} alt="Visuel" className="max-w-full max-h-full object-contain" />)}</div></div>)}
                         {showQuoteModal && currentQuote && <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] flex items-center justify-center p-6 animate-fade"><div className="max-w-2xl w-full text-center text-white"><div className="mb-8"><Icon name="Quote" size={64} className="mx-auto text-blue-400 opacity-50"/></div><h2 className="text-3xl md:text-5xl font-black mb-8 leading-tight">"{currentQuote.text}"</h2><p className="text-xl text-blue-200 font-medium mb-12">— {currentQuote.author}</p><button onClick={() => setShowQuoteModal(false)} className="bg-white text-slate-900 px-8 py-4 rounded-full font-bold text-lg hover:bg-blue-50 transition-transform hover:scale-105 shadow-xl">Accéder au Portail <Icon name="ArrowRight" className="inline ml-2"/></button></div></div>}
 
@@ -686,28 +819,55 @@
                             {activeTab === 'search' && (
                                 <div className="animate-fade">
                                     {dbMeta && <div className="bg-blue-50 border border-blue-100 rounded-lg px-4 py-2 mb-6 flex justify-between items-center text-xs text-blue-800 animate-fade"><div className="flex gap-4"><span className="font-bold flex items-center gap-1"><Icon name="Clock" size={12}/> MAJ: {dbMeta.date}</span><span className="hidden md:inline">|</span><span className="flex items-center gap-1"><Icon name="User" size={12}/> {dbMeta.user}</span></div><div className="italic opacity-75 hidden md:block">Données synchronisées automatiquement</div></div>}
-                                    {/* BLOCK NOUVEAUTES */}
+                                    {dbHistory.length > 0 && <div className="bg-slate-900 text-white py-2 px-4 rounded-lg mb-6 shadow-md border border-slate-700 overflow-hidden relative"><div className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-slate-900 to-transparent w-10 z-10"></div><div className="absolute right-0 top-0 bottom-0 bg-gradient-to-l from-slate-900 to-transparent w-10 z-10"></div><div className="marquee-container"><div className="marquee-content flex gap-8">{dbHistory.map((h, i) => (<span key={i} className="inline-flex items-center gap-2 text-xs font-mono"><span className="text-blue-400">[{h.date}]</span><span className="font-bold text-yellow-400">{h.user}</span>:<span>{h.action}</span><span className="text-slate-600 mx-2">|</span></span>))}</div></div></div>}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                                        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-                                            <h3 className="text-xs font-bold uppercase text-slate-400 mb-4 flex items-center gap-2"><Icon name="BellRing" size={14}/> Dernières Mises à Jour & Rapports</h3>
-                                            <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-                                                {tarifs.filter(t => t.report && (t.report.changed?.length > 0 || t.report.added?.length > 0 || t.report.removed?.length > 0)).sort((a, b) => new Date(b.index_date || 0) - new Date(a.index_date || 0)).slice(0, 5).map((t, i) => (
-                                                    <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                                        <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center font-bold text-orange-600 shrink-0"><Icon name="TrendingUp" size={18}/></div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="font-bold text-slate-700 text-sm truncate">MAJ sur le tarif {t.name}</div>
-                                                            <div className="text-xs text-slate-400">{t.index_date}</div>
-                                                        </div>
-                                                        <button onClick={() => setViewingReport(t.report)} className="px-3 py-1.5 bg-white text-blue-600 text-xs font-bold rounded-lg border border-slate-200 hover:bg-blue-50 transition-colors shrink-0">Consulter les nouveautés</button>
-                                                    </div>
-                                                ))}
-                                                {tarifs.filter(t => t.report && (t.report.changed?.length > 0 || t.report.added?.length > 0 || t.report.removed?.length > 0)).length === 0 && <div className="text-center text-slate-400 py-4 text-xs italic">Aucune modification récente détectée.</div>}
-                                            </div>
-                                        </div>
+                                        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm"><h3 className="text-xs font-bold uppercase text-slate-400 mb-4 flex items-center gap-2"><Icon name="BarChart2" size={14}/> Top Recherches (Local)</h3><div className="space-y-3">{users.sort((a,b) => b.searchCount - a.searchCount).slice(0, 3).map((u, i) => (<div key={i} className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-xs text-slate-600">{u.name.charAt(0)}</div><div className="flex-1"><div className="flex justify-between text-xs mb-1"><span className="font-bold text-slate-700">{u.name}</span><span className="text-slate-400">{u.searchCount} rech.</span></div><div className="h-2 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-blue-500 rounded-full bar-fill" style={{width: `${Math.min((u.searchCount / (Math.max(...users.map(u=>u.searchCount)) || 1)) * 100, 100)}%`}}></div></div></div></div>))}</div></div>
                                         <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm"><h3 className="text-xs font-bold uppercase text-slate-400 mb-4 flex items-center gap-2"><Icon name="PieChart" size={14}/> Base de Données</h3><div className="flex gap-4 items-center h-full pb-4"><div className="flex-1 text-center p-4 bg-green-50 rounded-xl"><div className="text-2xl font-black text-green-600">{tarifs.length}</div><div className="text-xs font-bold text-green-800 uppercase">Tarifs</div></div><div className="flex-1 text-center p-4 bg-indigo-50 rounded-xl"><div className="text-2xl font-black text-indigo-600">{fiches.length}</div><div className="text-xs font-bold text-indigo-800 uppercase">Fiches</div></div><div className="flex-1 text-center p-4 bg-blue-50 rounded-xl"><div className="text-2xl font-black text-blue-600">{tarifs.reduce((acc,t)=>acc+(t.products?.length||0),0)}</div><div className="text-xs font-bold text-blue-800 uppercase">Produits</div></div></div></div>
                                     </div>
                                     <div className="max-w-3xl mx-auto text-center mb-10"><div className="relative group z-10"><input className="w-full p-5 pl-14 rounded-2xl border border-slate-200 shadow-xl shadow-slate-100 focus:ring-4 focus:ring-blue-50 outline-none text-lg font-medium transition-all" placeholder="Rechercher un produit ou une fiche..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} autoFocus /><div className="absolute left-5 top-5 text-slate-300 group-focus-within:text-blue-500 transition-colors"><Icon name="Search" size={24} /></div></div><div className="mt-4 flex justify-center"><button onClick={() => uploadInputRef.current.click()} disabled={isUploading} className="text-xs font-bold text-slate-400 hover:text-blue-600 flex items-center gap-2 transition-colors bg-slate-50 hover:bg-blue-50 px-3 py-1.5 rounded-full"><Icon name={isUploading ? "Loader2" : "UploadCloud"} size={14} className={isUploading ? "animate-spin" : ""}/>{isUploading ? "Envoi..." : "Ajouter Fiche PDF"}</button><input type="file" ref={uploadInputRef} onChange={handleUploadFiche} accept="application/pdf" className="hidden" /></div></div>
-                                    <div className="space-y-8 pb-20">{searchResults.products.length > 0 && (<div className="animate-fade"><h3 className="text-sm font-bold uppercase text-slate-400 mb-4 pl-2 flex items-center gap-2"><Icon name="Box" size={16}/> Tarifs ({searchResults.products.length})</h3><div className="space-y-3">{searchResults.products.map((res, i) => { const isTaxable = res.name && (res.name.trim().startsWith('*') || res.name.trim().endsWith('*')); const priceVal = parsePrice(res.price); const validPrice = !isNaN(priceVal); const priceHT = validPrice ? priceVal.toFixed(2) : res.price; const priceTTC = validPrice ? (priceVal * 1.20).toFixed(2) : null; const t4Rate = res.t4_percentage || 0; const basePriceForT4 = isTaxable ? (validPrice ? priceVal * 1.20 : 0) : priceVal; const priceT4 = validPrice ? (basePriceForT4 * (1 - t4Rate/100)).toFixed(2) : null; const pricesObj = { ht: validPrice ? priceHT : null, ttc: isTaxable ? priceTTC : null, t4: (t4Rate > 0 && validPrice) ? priceT4 : null }; return (<div key={i} className="bg-white p-5 rounded-2xl border border-slate-100 hover:border-blue-300 hover:shadow-lg transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 group"><div className="flex items-start gap-4"><div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-50 text-blue-600"><Icon name="Tag" size={20}/></div><div><div className="font-bold text-slate-800 text-lg">{res.name}{res.packaging && <span className="ml-2 text-sm font-normal text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">en {res.packaging}</span>}</div><div className="flex flex-wrap items-center gap-2 mt-2"><span className="bg-slate-100 px-2.5 py-1 rounded-lg text-xs font-bold text-slate-600 flex items-center gap-1"><Icon name="Folder" size={12}/> {res.source}</span><span className="px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 bg-green-50 text-green-600 border border-green-100"><Icon name="Calendar" size={12}/> {res.date_tarif}</span>{t4Rate > 0 && <span className="px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 bg-orange-50 text-orange-600 border border-orange-100"><Icon name="Percent" size={12}/> T4: -{t4Rate}%</span>}</div></div></div><div className="flex items-center justify-between md:justify-end gap-3 pl-14 md:pl-0"><div className="text-right mr-4">{validPrice && isTaxable ? (<div className="flex flex-col items-end"><div className="text-sm font-bold text-slate-400">{priceHT} <span className="text-[10px]">HT</span></div><div className="text-xl font-bold text-slate-700 whitespace-nowrap">{priceTTC} <span className="text-xs text-slate-400 font-bold">TTC</span></div>{t4Rate > 0 && <div className="text-2xl font-black text-orange-500 whitespace-nowrap">{priceT4} <span className="text-xs text-orange-300 font-bold">T4</span></div>}</div>) : (<div className="flex flex-col items-end"><div className="text-xl font-bold text-green-600 whitespace-nowrap">{priceHT} <span className="text-xs text-green-800 font-bold">{validPrice ? 'EXO' : (res.unit || 'DH')}</span></div>{t4Rate > 0 && validPrice && <div className="text-2xl font-black text-orange-500 whitespace-nowrap">{priceT4} <span className="text-xs text-orange-300 font-bold">T4</span></div>}</div>)}{validPrice && <div className="text-xs text-slate-400 font-bold mt-1 text-right">{res.unit || 'DH'}</div>}</div><div className="flex gap-2">{validPrice && <button onClick={() => openCalculator(res, pricesObj)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm" title="Calculatrice"><Icon name="Calculator" size={16}/></button>}{res.report && <button onClick={() => setViewingReport(res.report)} className="bg-orange-50 hover:bg-orange-100 text-orange-600 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm border border-orange-200" title="Consulter Différence Tarifs"><Icon name="TrendingUp" size={16}/></button>}<button onClick={() => openFile(res.path, res.source)} className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 shadow-sm"><Icon name="Eye" size={14}/> Voir</button></div></div></div>);})}</div></div>)}{searchResults.fiches.length > 0 && (<div className="animate-fade"><h3 className="text-sm font-bold uppercase text-slate-400 mb-4 pl-2 flex items-center gap-2 border-t pt-6 mt-6 md:border-none md:pt-0 md:mt-0"><Icon name="FileText" size={16}/> Fiches ({searchResults.fiches.length})</h3><div className="grid grid-cols-1 md:grid-cols-2 gap-4">{searchResults.fiches.map((f, i) => (<div key={i} className="bg-white p-4 rounded-2xl border border-slate-100 hover:border-indigo-300 hover:shadow-md transition-all flex items-center justify-between group"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0"><Icon name="FileText" size={20}/></div><div className="truncate pr-4"><div className="font-bold text-slate-700 truncate">{f.name}</div><div className="text-xs text-slate-400">PDF</div></div></div><button onClick={() => openFile(f.path, f.name)} className="p-2 text-slate-400 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50 rounded-lg transition-colors"><Icon name="Eye" size={18}/></button></div>))}</div></div>)}</div></div>)}</div>
+                                    <div className="space-y-8 pb-20">
+                                        {searchResults.products.length > 0 && (
+                                            <div className="animate-fade">
+                                                <h3 className="text-sm font-bold uppercase text-slate-400 mb-4 pl-2 flex items-center gap-2"><Icon name="Box" size={16}/> Tarifs ({searchResults.products.length})</h3>
+                                                <div className="space-y-3">
+                                                    {searchResults.products.map((res, i) => {
+                                                        const isTaxable = res.name && (res.name.trim().startsWith('*') || res.name.trim().endsWith('*'));
+                                                        const priceVal = parsePrice(res.price);
+                                                        const validPrice = !isNaN(priceVal);
+                                                        const priceHT = validPrice ? priceVal.toFixed(2) : res.price;
+                                                        const priceTTC = validPrice ? (priceVal * 1.20).toFixed(2) : null;
+                                                        const t4Rate = res.t4_percentage || 0;
+                                                        const basePriceForT4 = isTaxable ? (validPrice ? priceVal * 1.20 : 0) : priceVal;
+                                                        const priceT4 = validPrice ? (basePriceForT4 * (1 - t4Rate/100)).toFixed(2) : null;
+                                                        const pricesObj = { ht: validPrice ? priceHT : null, ttc: isTaxable ? priceTTC : null, t4: (t4Rate > 0 && validPrice) ? priceT4 : null };
+                                                        
+                                                        return (
+                                                            <div key={i} className="bg-white p-5 rounded-2xl border border-slate-100 hover:border-blue-300 hover:shadow-lg transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 group">
+                                                                <div className="flex items-start gap-4"><div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-50 text-blue-600"><Icon name="Tag" size={20}/></div><div><div className="font-bold text-slate-800 text-lg">{res.name}{res.packaging && <span className="ml-2 text-sm font-normal text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">en {res.packaging}</span>}</div><div className="flex flex-wrap items-center gap-2 mt-2"><span className="bg-slate-100 px-2.5 py-1 rounded-lg text-xs font-bold text-slate-600 flex items-center gap-1"><Icon name="Folder" size={12}/> {res.source}</span><span className="px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 bg-green-50 text-green-600 border border-green-100"><Icon name="Calendar" size={12}/> {res.date_tarif}</span>{t4Rate > 0 && <span className="px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 bg-orange-50 text-orange-600 border border-orange-100"><Icon name="Percent" size={12}/> T4: -{t4Rate}%</span>}</div></div></div>
+                                                                <div className="flex items-center justify-between md:justify-end gap-3 pl-14 md:pl-0">
+                                                                    <div className="text-right mr-4">{validPrice && isTaxable ? (<div className="flex flex-col items-end"><div className="text-sm font-bold text-slate-400">{priceHT} <span className="text-[10px]">HT</span></div><div className="text-xl font-bold text-slate-700 whitespace-nowrap">{priceTTC} <span className="text-xs text-slate-400 font-bold">TTC</span></div>{t4Rate > 0 && <div className="text-2xl font-black text-orange-500 whitespace-nowrap">{priceT4} <span className="text-xs text-orange-300 font-bold">T4</span></div>}</div>) : (<div className="flex flex-col items-end"><div className="text-xl font-bold text-green-600 whitespace-nowrap">{priceHT} <span className="text-xs text-green-800 font-bold">{validPrice ? 'EXO' : (res.unit || 'DH')}</span></div>{t4Rate > 0 && validPrice && <div className="text-2xl font-black text-orange-500 whitespace-nowrap">{priceT4} <span className="text-xs text-orange-300 font-bold">T4</span></div>}</div>)}{validPrice && <div className="text-xs text-slate-400 font-bold mt-1 text-right">{res.unit || 'DH'}</div>}</div>
+                                                                    <div className="flex gap-2">
+                                                                        {validPrice && <button onClick={() => openCalculator(res, pricesObj)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm" title="Calculatrice"><Icon name="Calculator" size={16}/></button>}
+                                                                        {res.report && <button onClick={() => setViewingReport(res.report)} className="bg-orange-50 hover:bg-orange-100 text-orange-600 px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm border border-orange-200" title="Consulter Différence Tarifs"><Icon name="TrendingUp" size={16}/></button>}
+                                                                        <button onClick={() => openFile(res.path, res.source)} className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 shadow-sm"><Icon name="Eye" size={14}/> Voir</button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {searchResults.fiches.length > 0 && (
+                                            <div className="animate-fade">
+                                                <h3 className="text-sm font-bold uppercase text-slate-400 mb-4 pl-2 flex items-center gap-2 border-t pt-6 mt-6 md:border-none md:pt-0 md:mt-0"><Icon name="FileText" size={16}/> Fiches ({searchResults.fiches.length})</h3>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    {searchResults.fiches.map((f, i) => (<div key={i} className="bg-white p-4 rounded-2xl border border-slate-100 hover:border-indigo-300 hover:shadow-md transition-all flex items-center justify-between group"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0"><Icon name="FileText" size={20}/></div><div className="truncate pr-4"><div className="font-bold text-slate-700 truncate">{f.name}</div><div className="text-xs text-slate-400">PDF</div></div></div><button onClick={() => openFile(f.path, f.name)} className="p-2 text-slate-400 hover:text-indigo-600 bg-slate-50 hover:bg-indigo-50 rounded-lg transition-colors"><Icon name="Eye" size={18}/></button></div>))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             )}
 
                             {activeTab === 'users' && currentUser.role === 'admin' && (
